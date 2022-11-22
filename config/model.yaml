@@ -1,0 +1,10 @@
+# attention heads 12
+# embedding size 512
+# decoder blocks 12
+# activation function GELU
+# max_seq_len 512
+# weight init: N(0, 0.02)
+# dropout in feedforwNN 0.1
+# learned position embeddings
+# spacy tokenizer, ftfy to clean text
+# bytepair encoding 40k 
