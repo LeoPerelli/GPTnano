@@ -1,6 +1,7 @@
-# attention heads 12
-# embedding size 512
-# decoder blocks 12
+# n_attention_heads 12
+# embedding_size 512
+# decoder_blocks 12
+# n_tokens 128
 # activation function GELU
 # max_seq_len 512
 # weight init: N(0, 0.02)
@@ -8,3 +9,5 @@
 # learned position embeddings
 # spacy tokenizer, ftfy to clean text
 # bytepair encoding 40k 
+# ffn_inner_layer 2048
+# attention_value_size = embedding_size / n_attention_heads
