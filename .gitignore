@@ -9,3 +9,6 @@ test.ipynb
 
 # Environments
 .env
+
+# Mac stuff
+*.DS_Store
