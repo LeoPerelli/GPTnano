@@ -1,6 +1,6 @@
 import torch
 
-#! TODO: add embedding using https://stackoverflow.com/questions/50747947/embedding-in-pytorch
+#! Add batch size, probably the only problem is in the softmax transpose etc that are indexed with 1. Instead, I should put relative positions with -1
 
 
 class SelfAttention(torch.nn.Module):
@@ -40,12 +40,12 @@ class SelfAttention(torch.nn.Module):
 
         normalize_value = torch.sqrt(self.attention_value_size)
 
-        Q_mm_K = torch.matmul(Q, torch.transpose(K, 0, 1))
+        Q_mm_K = torch.matmul(Q, torch.transpose(K, -1, -2))
 
         # mask out due to causal attention
         Q_mm_K *= self.mask
 
-        softmax_val = torch.nn.functional.softmax(Q_mm_K / normalize_value, dim=1)
+        softmax_val = torch.nn.functional.softmax(Q_mm_K / normalize_value, dim=-1)
         self_attention_matrix = torch.matmul(softmax_val, V)
 
         return self_attention_matrix
@@ -110,7 +110,7 @@ class MultiHeadAttention(torch.nn.Module):
                 attention_module.forward(token_embeddings=token_embeddings)
             )
 
-        concatenated_attention_heads = torch.cat(attention_heads, 1)
+        concatenated_attention_heads = torch.cat(attention_heads, -1)
 
         return concatenated_attention_heads
 
@@ -147,8 +147,8 @@ class LayerNorm(torch.nn.Module):
 
     def normalize(self, token_embeddings):
 
-        mean = torch.mean(token_embeddings, dim=-1).unsqueeze(1)
-        var = torch.var(token_embeddings, dim=-1, unbiased=False).unsqueeze(1)
+        mean = torch.mean(token_embeddings, dim=-1).unsqueeze(-1)
+        var = torch.var(token_embeddings, dim=-1, unbiased=False).unsqueeze(-1)
 
         norm = (
             self.gamma * (token_embeddings - mean) / torch.sqrt(var + self.eps)
@@ -173,7 +173,7 @@ class LinearHead(torch.nn.Module):
 
         linear_layer = torch.matmul(token_embeddings, self.W_1) + self.b_1
 
-        return torch.nn.functional.softmax(linear_layer, dim=1)
+        return torch.nn.functional.softmax(linear_layer, dim=-1)
 
 
 class DecoderModule(torch.nn.Module):
