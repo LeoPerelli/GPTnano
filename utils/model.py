@@ -46,7 +46,11 @@ class GPT(torch.nn.Module):
         Uses lookup table to get the token encoding and sums the learnt positional encodings
         """
 
-        return self.lookup_encodings(tokens) + self.lookup_positional
+        token_encoding_positional = (
+            self.lookup_encodings(tokens) + self.lookup_positional
+        )
+
+        return torch.dropout(token_encoding_positional, p=0.1)
 
     def forward(self, tokens):
 

@@ -215,17 +215,19 @@ class DecoderModule(torch.nn.Module):
         """
 
         # Multi head attention and residuals
-        token_embeddings += self.multi_head_attention.forward(
+        attention_output = self.multi_head_attention.forward(
             token_embeddings=token_embeddings
         )
+        token_embeddings += torch.dropout(attention_output, p=0.1)
 
         # Layer normalization
         token_embeddings = self.layer_norm.normalize(token_embeddings=token_embeddings)
 
         # Feed forward network with residuals
-        token_embeddings += self.feed_forward_layer.forward(
+        feed_forward_output = self.feed_forward_layer.forward(
             token_embeddings=token_embeddings
         )
+        token_embeddings += torch.dropout(feed_forward_output, p=0.1)
 
         # Layer normalization
         token_embeddings = self.layer_norm.normalize(token_embeddings=token_embeddings)
