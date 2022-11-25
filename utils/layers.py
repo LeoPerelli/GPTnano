@@ -16,9 +16,15 @@ class SelfAttention(torch.nn.Module):
 
         super().__init__()
         self.attention_value_size = torch.tensor(attention_value_size)
-        self.W_Q = torch.rand(size=(embedding_size, attention_value_size))
-        self.W_K = torch.rand(size=(embedding_size, attention_value_size))
-        self.W_V = torch.rand(size=(embedding_size, attention_value_size))
+        self.W_Q = torch.nn.Linear(
+            in_features=embedding_size, out_features=attention_value_size, bias=False
+        )
+        self.W_K = torch.nn.Linear(
+            in_features=embedding_size, out_features=attention_value_size, bias=False
+        )
+        self.W_V = torch.nn.Linear(
+            in_features=embedding_size, out_features=attention_value_size, bias=False
+        )
 
         # Create mask matrix: lower triangluar is attended (including diagonal), upper triangular is ignored
         mask_attend = torch.ones(size=(n_tokens, n_tokens))
@@ -59,10 +65,12 @@ class FeedForward(torch.nn.Module):
     def __init__(self, embedding_size, ffn_inner_layer):
 
         super().__init__()
-        self.W_1 = torch.rand(size=(embedding_size, ffn_inner_layer))
-        self.W_2 = torch.rand(size=(ffn_inner_layer, embedding_size))
-        self.b_1 = torch.rand(size=(1, ffn_inner_layer))
-        self.b_2 = torch.rand(size=(1, embedding_size))
+        self.l1 = torch.nn.Linear(
+            in_features=embedding_size, out_features=ffn_inner_layer
+        )
+        self.l2 = torch.nn.Linear(
+            in_features=ffn_inner_layer, out_features=embedding_size
+        )
 
     def forward(self, token_embeddings):
         """
@@ -72,9 +80,9 @@ class FeedForward(torch.nn.Module):
         Returns (n_tokens, embedding_size) after applying ReLU non linearity
         """
 
-        layer_1 = torch.matmul(token_embeddings, self.W_1) + self.b_1
+        layer_1 = self.l1(token_embeddings)
         relu = torch.relu(layer_1)
-        layer_2 = torch.matmul(relu, self.W_2) + self.b_2
+        layer_2 = self.l2(relu)
 
         return layer_2
 
@@ -89,8 +97,10 @@ class MultiHeadAttention(torch.nn.Module):
     ):
         super().__init__()
 
-        self.W_Pool = torch.rand(
-            size=(n_attention_heads * attention_value_size, embedding_size)
+        self.pool_layer = torch.nn.Linear(
+            in_features=n_attention_heads * attention_value_size,
+            out_features=embedding_size,
+            bias=False,
         )
 
         self.attention_modules = [
@@ -129,7 +139,7 @@ class MultiHeadAttention(torch.nn.Module):
             token_embeddings=token_embeddings
         )
 
-        return torch.matmul(concatenated_heads, self.W_Pool)
+        return self.pool_layer(concatenated_heads)
 
 
 class LayerNorm(torch.nn.Module):
@@ -141,8 +151,8 @@ class LayerNorm(torch.nn.Module):
 
         super().__init__()
 
-        self.gamma = torch.rand(size=(1, 1))
-        self.beta = torch.rand(size=(1, embedding_size))
+        self.gamma = torch.nn.Parameter(torch.rand(size=(1, 1)))
+        self.beta = torch.nn.Parameter(torch.rand(size=(1, embedding_size)))
         self.eps = eps
 
     def normalize(self, token_embeddings):
@@ -166,12 +176,13 @@ class LinearHead(torch.nn.Module):
     def __init__(self, embedding_size, vocabulary_size):
 
         super().__init__()
-        self.W_1 = torch.rand(size=(embedding_size, vocabulary_size))
-        self.b_1 = torch.rand(size=(1, vocabulary_size))
+        self.linear = torch.nn.Linear(
+            in_features=embedding_size, out_features=vocabulary_size
+        )
 
     def forward(self, token_embeddings):
 
-        linear_layer = torch.matmul(token_embeddings, self.W_1) + self.b_1
+        linear_layer = self.linear(token_embeddings)
 
         return torch.nn.functional.softmax(linear_layer, dim=-1)
 
