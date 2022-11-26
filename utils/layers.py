@@ -1,6 +1,6 @@
 import torch
 
-#! TODO: check that all parameters appear in DecodeModule etc
+#! Write unit test that checks for nan (amd shape?)
 
 
 class SelfAttentionHead(torch.nn.Module):
@@ -27,9 +27,8 @@ class SelfAttentionHead(torch.nn.Module):
         )
 
         # Create mask matrix: lower triangluar is attended (including diagonal), upper triangular is ignored
-        mask_attend = torch.ones(size=(n_tokens, n_tokens))
-        mask_ignore = -float("inf") * torch.ones(size=(n_tokens, n_tokens))
-        self.mask = torch.tril(mask_attend) + torch.triu(mask_ignore, diagonal=1)
+        self.mask_attend = torch.ones(size=(n_tokens, n_tokens))
+        self.mask_ignore = -float("inf") * torch.ones(size=(n_tokens, n_tokens))
 
     def forward(self, token_embeddings):
         """
@@ -49,7 +48,8 @@ class SelfAttentionHead(torch.nn.Module):
         Q_mm_K = torch.matmul(Q, torch.transpose(K, -1, -2))
 
         # mask out due to causal attention
-        Q_mm_K *= self.mask
+        Q_mm_K *= torch.tril(self.mask_attend)
+        Q_mm_K += torch.triu(self.mask_ignore, diagonal=1)
 
         softmax_val = torch.nn.functional.softmax(Q_mm_K / normalize_value, dim=-1)
         self_attention_matrix = torch.matmul(softmax_val, V)
