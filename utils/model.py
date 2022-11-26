@@ -39,6 +39,8 @@ class GPT(torch.nn.Module):
             ]
         )
 
+        self.dropout = torch.nn.Dropout(p=0.1)
+
         self.head = LinearHead(
             embedding_size=embedding_size, vocabulary_size=vocabulary_size
         )
@@ -52,7 +54,7 @@ class GPT(torch.nn.Module):
             self.lookup_encodings(tokens) + self.lookup_positional
         )
 
-        return torch.dropout(token_encoding_positional, p=0.1)
+        return self.dropout(token_encoding_positional)
 
     def forward(self, tokens):
 

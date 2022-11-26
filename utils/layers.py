@@ -40,9 +40,9 @@ class SelfAttentionHead(torch.nn.Module):
         """
 
         # Q,K,V are all (n_tokens,attention_value_size)
-        Q = torch.matmul(token_embeddings, self.W_Q)
-        K = torch.matmul(token_embeddings, self.W_K)
-        V = torch.matmul(token_embeddings, self.W_V)
+        Q = self.W_Q(token_embeddings)
+        K = self.W_K(token_embeddings)
+        V = self.W_V(token_embeddings)
 
         normalize_value = torch.sqrt(self.attention_value_size)
 
@@ -170,25 +170,6 @@ class LayerNorm(torch.nn.Module):
         return norm
 
 
-class LinearHead(torch.nn.Module):
-    """
-    Plain linear head with softmax to predict over vocabulary
-    """
-
-    def __init__(self, embedding_size, vocabulary_size):
-
-        super().__init__()
-        self.linear = torch.nn.Linear(
-            in_features=embedding_size, out_features=vocabulary_size
-        )
-
-    def forward(self, token_embeddings):
-
-        linear_layer = self.linear(token_embeddings)
-
-        return torch.nn.functional.softmax(linear_layer, dim=-1)
-
-
 class DecoderModule(torch.nn.Module):
     """
     Unified decoder block. Computes multi-head attention, residual layer, feedforward layer and once again residual layer.
@@ -217,6 +198,8 @@ class DecoderModule(torch.nn.Module):
             embedding_size=embedding_size, ffn_inner_layer=ffn_inner_layer
         )
 
+        self.dropout = torch.nn.Dropout(p=0.1)
+
     def forward(self, token_embeddings):
         """
         Receives:
@@ -231,7 +214,7 @@ class DecoderModule(torch.nn.Module):
         attention_output = self.multi_head_attention.forward(
             token_embeddings=token_embeddings
         )
-        token_embeddings += torch.dropout(attention_output, p=0.1)
+        token_embeddings += self.dropout(attention_output)
 
         # Layer normalization
         token_embeddings = self.layer_norm.normalize(token_embeddings=token_embeddings)
@@ -240,9 +223,28 @@ class DecoderModule(torch.nn.Module):
         feed_forward_output = self.feed_forward_layer.forward(
             token_embeddings=token_embeddings
         )
-        token_embeddings += torch.dropout(feed_forward_output, p=0.1)
+        token_embeddings += self.dropout(feed_forward_output)
 
         # Layer normalization
         token_embeddings = self.layer_norm.normalize(token_embeddings=token_embeddings)
 
         return token_embeddings
+
+
+class LinearHead(torch.nn.Module):
+    """
+    Plain linear head with log_softmax to predict over vocabulary. We use log_softmax rather than softmax since we will use Negative-Log-Likelihood loss later on
+    """
+
+    def __init__(self, embedding_size, vocabulary_size):
+
+        super().__init__()
+        self.linear = torch.nn.Linear(
+            in_features=embedding_size, out_features=vocabulary_size
+        )
+
+    def forward(self, token_embeddings):
+
+        linear_layer = self.linear(token_embeddings)
+
+        return torch.nn.functional.log_softmax(linear_layer, dim=-1)
