@@ -1,9 +1,9 @@
 import torch
 
-#! Add batch size, probably the only problem is in the softmax transpose etc that are indexed with 1. Instead, I should put relative positions with -1
+#! TODO: check that all parameters appear in DecodeModule etc
 
 
-class SelfAttention(torch.nn.Module):
+class SelfAttentionHead(torch.nn.Module):
     """
     Computes Query-Key-Value attention by weighting the value vectors by the self-attention.
     """
@@ -97,25 +97,27 @@ class MultiHeadAttention(torch.nn.Module):
     ):
         super().__init__()
 
+        self.attention_heads = torch.nn.ModuleList(
+            [
+                SelfAttentionHead(
+                    embedding_size=embedding_size,
+                    attention_value_size=attention_value_size,
+                    n_tokens=n_tokens,
+                )
+                for i in range(n_attention_heads)
+            ]
+        )
+
         self.pool_layer = torch.nn.Linear(
             in_features=n_attention_heads * attention_value_size,
             out_features=embedding_size,
             bias=False,
         )
 
-        self.attention_modules = [
-            SelfAttention(
-                embedding_size=embedding_size,
-                attention_value_size=attention_value_size,
-                n_tokens=n_tokens,
-            )
-            for i in range(n_attention_heads)
-        ]
-
     def compute_and_concat_heads(self, token_embeddings):
 
         attention_heads = []
-        for attention_module in self.attention_modules:
+        for attention_module in self.attention_heads:
             attention_heads.append(
                 attention_module.forward(token_embeddings=token_embeddings)
             )
@@ -209,11 +211,11 @@ class DecoderModule(torch.nn.Module):
             n_tokens=n_tokens,
         )
 
+        self.layer_norm = LayerNorm(embedding_size=embedding_size)
+
         self.feed_forward_layer = FeedForward(
             embedding_size=embedding_size, ffn_inner_layer=ffn_inner_layer
         )
-
-        self.layer_norm = LayerNorm(embedding_size=embedding_size)
 
     def forward(self, token_embeddings):
         """

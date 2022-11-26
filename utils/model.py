@@ -26,16 +26,18 @@ class GPT(torch.nn.Module):
         )
         self.lookup_positional = torch.rand(size=(n_tokens, embedding_size))
 
-        self.decoder_modules = [
-            DecoderModule(
-                n_attention_heads=n_attention_heads,
-                attention_value_size=attention_value_size,
-                embedding_size=embedding_size,
-                n_tokens=n_tokens,
-                ffn_inner_layer=ffn_inner_layer,
-            )
-            for _ in range(n_decoders)
-        ]
+        self.decoder_modules = torch.nn.ModuleList(
+            [
+                DecoderModule(
+                    n_attention_heads=n_attention_heads,
+                    attention_value_size=attention_value_size,
+                    embedding_size=embedding_size,
+                    n_tokens=n_tokens,
+                    ffn_inner_layer=ffn_inner_layer,
+                )
+                for _ in range(n_decoders)
+            ]
+        )
 
         self.head = LinearHead(
             embedding_size=embedding_size, vocabulary_size=vocabulary_size
