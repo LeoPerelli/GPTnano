@@ -45,6 +45,16 @@ class GPT(torch.nn.Module):
             embedding_size=embedding_size, vocabulary_size=vocabulary_size
         )
 
+        self.apply(self.init_weights)
+
+    def init_weights(self, module):
+        if isinstance(module, torch.nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=0.02)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        if isinstance(module, torch.nn.Embedding):
+            module.weight.data.normal_(mean=0.0, std=0.02)
+
     def get_token_encodings(self, tokens):
         """
         Uses lookup table to get the token encoding and sums the learnt positional encodings

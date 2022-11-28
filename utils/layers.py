@@ -48,8 +48,8 @@ class SelfAttentionHead(torch.nn.Module):
         Q_mm_K = torch.matmul(Q, torch.transpose(K, -1, -2))
 
         # mask out due to causal attention
-        Q_mm_K *= torch.tril(self.mask_attend)
-        Q_mm_K += torch.triu(self.mask_ignore, diagonal=1)
+        Q_mm_K = Q_mm_K * torch.tril(self.mask_attend)
+        Q_mm_K = Q_mm_K + torch.triu(self.mask_ignore, diagonal=1)
 
         softmax_val = torch.nn.functional.softmax(Q_mm_K / normalize_value, dim=-1)
         self_attention_matrix = torch.matmul(softmax_val, V)
@@ -214,7 +214,7 @@ class DecoderModule(torch.nn.Module):
         attention_output = self.multi_head_attention.forward(
             token_embeddings=token_embeddings
         )
-        token_embeddings += self.dropout(attention_output)
+        token_embeddings = token_embeddings + self.dropout(attention_output)
 
         # Layer normalization
         token_embeddings = self.layer_norm.normalize(token_embeddings=token_embeddings)
@@ -223,7 +223,7 @@ class DecoderModule(torch.nn.Module):
         feed_forward_output = self.feed_forward_layer.forward(
             token_embeddings=token_embeddings
         )
-        token_embeddings += self.dropout(feed_forward_output)
+        token_embeddings = token_embeddings + self.dropout(feed_forward_output)
 
         # Layer normalization
         token_embeddings = self.layer_norm.normalize(token_embeddings=token_embeddings)
