@@ -16,6 +16,7 @@ class GPT(torch.nn.Module):
         ffn_inner_layer,
         n_decoders,
         vocabulary_size,
+        p_dropout=0.1,
     ):
 
         super().__init__()
@@ -30,10 +31,10 @@ class GPT(torch.nn.Module):
             [
                 DecoderModule(
                     n_attention_heads=n_attention_heads,
-                    attention_value_size=attention_value_size,
                     embedding_size=embedding_size,
                     n_tokens=n_tokens,
                     ffn_inner_layer=ffn_inner_layer,
+                    p_dropout=p_dropout,
                 )
                 for _ in range(n_decoders)
             ]
